@@ -1,7 +1,8 @@
 const path = require("path");
-const config = require("../config");
+const config = require("../cnf");
 const mysql = require("mysql");
 const catchAsync = require("../utils/catchAsync");
+const { response } = require("express");
 const pool = mysql.createPool({
   connectionLimit: config.SQLpool.connectionLimit,
   host: config.SQLpool.host,
@@ -10,23 +11,23 @@ const pool = mysql.createPool({
   database: config.SQLpool.database,
 });
 
-exports.createBookmark = catchAsync(
-  async (req, res, next) => {
-    await pool.getConnection((err, conn) => {
+exports.createBookmark = catchAsync(async (req, res, next) => {
+  await pool.getConnection((err, conn) => {
+    if (err) throw err;
+    let hosName = req.body.hosName;
+    let hosAddress = req.body.hosAddress;
+    let userId = req.body.userId;
+    let sql = `insert into bookmark(hosName, hosAddress, userId) values (?, ?, ?);`;
+    console.log(sql);
+    conn.query(sql, [hosName, hosAddress, userId], (err, rows) => {
       if (err) throw err;
-      let hosName = req.body.hosName;
-      let hosAddress = req.body.hosAddress;
-      let userId = req.body.userId;
-      let sql = `INSERT INTO bookmark values ('${hosName}','${hosAddress}','${userId}');`;
-      conn.query(sql, (err, rows) => {
-        if (err) throw err;
-        res.send(rows);
-      });
-      conn.release();
+      res.send(rows);
     });
-  }
-);
+    conn.release();
+  });
+});
 
+/*
 exports.deleteBookmark = catchAsync(
   async (req, res, next) => {
     await pool.getConnection((err, conn) => {
@@ -42,20 +43,19 @@ exports.deleteBookmark = catchAsync(
     });
   }
 );
-
-exports.getBookmark = catchAsync(
-  async (req, res, next) => {
-    await pool.getConnection((err, conn) => {
+*/
+exports.getBookmark = catchAsync(async (req, res, next) => {
+  await pool.getConnection((err, conn) => {
+    if (err) throw err;
+    // 로그인 확인
+    // bookmark 정보 보내기
+    let userId = req.params.id;
+    console.log(userId);
+    let sql = `select * from bookmark where userId = "${userId}";`;
+    conn.query(sql, (err, rows) => {
       if (err) throw err;
-      // 로그인 확인
-      // bookmark 정보 보내기
-      let userId = req.params.userId;
-      let sql = `select * from bookmark where userId = ${userId};`;
-      conn.query(sql, (err, rows) => {
-        if (err) throw err;
-        res.send(rows);
-      });
-      conn.release();
+      res.send(rows);
     });
-  }
-);
+    conn.release();
+  });
+});
